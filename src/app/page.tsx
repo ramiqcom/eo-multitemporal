@@ -1,6 +1,7 @@
 'use client';
 
-import { BBox, bboxPolygon, booleanOverlap } from '@turf/turf';
+import booleanIntersects from '@turf/intersect';
+import { BBox, bboxPolygon } from '@turf/turf';
 import { LngLatBoundsLike, Map, RasterTileSource } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useEffect, useState } from 'react';
@@ -94,7 +95,7 @@ export default function Home() {
 
       // Compare to previous bounds
       const oldBounds = bboxPolygon(bounds as BBox);
-      const intersect = booleanOverlap(boundsNewPolygon, oldBounds);
+      const intersect = booleanIntersects(boundsNewPolygon, oldBounds);
 
       if (!intersect) {
         setBounds(boundsNew);
