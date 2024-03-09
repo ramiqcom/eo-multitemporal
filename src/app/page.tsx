@@ -10,10 +10,16 @@ export default function Home() {
   const mapDivId = 'map';
   const rasterId = 'ee-layer';
 
+  // Maptiler key
+  const mapTilerKey = process.env.NEXT_PUBLIC_MAPTILER_KEY;
+
   // Map state
   const [map, setMap] = useState<Map>();
+  const [mapStyle, setMapStyle] = useState(
+    `https://api.maptiler.com/maps/basic-v2/style.json?key=${mapTilerKey}`,
+  );
   const [bounds, setBounds] = useState<LngLatBoundsLike>([
-    115.75696526982738, -1.9748016469508622, 117.55592285718053, -0.17616091950178595,
+    105.97914832893267, -7.138747219601581, 107.78850517687292, -5.340106492152504,
   ]);
   const [tileUrl, setTileUrl] = useState<string>();
 
@@ -22,12 +28,12 @@ export default function Home() {
   const currentDate = new Date();
   const currentDateString = stringDate(currentDate);
   const currentDateMilis = currentDate.getTime();
-  const lastMonthMillis = currentDateMilis - 7_889_400_000;
+  const lastMonthMillis = currentDateMilis - 7_889_238_000;
   const lastMonthDate = new Date(lastMonthMillis);
   const lastMonthString = stringDate(lastMonthDate);
 
   // Bands composite
-  const [bands, setBands] = useState(['SR_B5', 'SR_B6', 'SR_B7']);
+  const [bands, setBands] = useState(['B8', 'B11', 'B12']);
 
   // Date state
   const [date, setDate] = useState<string[]>([lastMonthString, currentDateString]);
@@ -67,7 +73,7 @@ export default function Home() {
     const map = new Map({
       container: mapDivId,
       bounds,
-      style: 'https://demotiles.maplibre.org/style.json',
+      style: mapStyle,
     });
 
     setMap(map);

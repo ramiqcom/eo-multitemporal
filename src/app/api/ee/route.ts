@@ -13,19 +13,23 @@ export async function POST(req: Request) {
 
     const geometry: ee.Geometry = ee.Geometry.BBox(bounds[0], bounds[1], bounds[2], bounds[3]);
 
-    const col: ee.FeatureCollection = ee
-      .FeatureCollection(
-        ['LANDSAT/LC08/C02/T1_L2', 'LANDSAT/LC09/C02/T1_L2'].map((id): ee.Image => {
-          return ee.ImageCollection(id).filterBounds(geometry).filterDate(date[0], date[1]);
-        }),
-      )
-      .flatten();
+    // Make into image col
+    const imageCol: ee.ImageCollection = ee
+      .ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
+      .filterBounds(geometry)
+      .filterDate(date[0], date[1]);
 
-    // Make into image col and scale it to 0-1
-    const imageCol: ee.ImageCollection = ee.ImageCollection(col).map(scaling);
+    // Cloud masking col
+    const maskingCol: ee.ImageCollection = ee
+      .ImageCollection('GOOGLE/CLOUD_SCORE_PLUS/V1/S2_HARMONIZED')
+      .filterBounds(geometry)
+      .filterDate(date[0], date[1]);
+
+    // Connect col
+    const connectCol = imageCol.linkCollection(maskingCol, ['cs_cdf']);
 
     // Cloud masking
-    const cloudMasked: ee.ImageCollection = imageCol.map(cloudMasking);
+    const cloudMasked: ee.ImageCollection = connectCol.map(cloudMasking);
 
     // Composite
     const median: ee.Image = cloudMasked.median();
@@ -48,32 +52,14 @@ export async function POST(req: Request) {
 }
 
 /**
- * Function to scale the image to 0 - 1
- * @param image
- * @returns
- */
-function scaling(image: ee.Image): ee.Image {
-  return image.addBands(image.select(['SR_B.*']).multiply(0.0000275).add(-0.2), null, true);
-}
-
-/**
  * Function to cloud mask
  * @param image
  * @returns
  */
 function cloudMasking(image: ee.Image): ee.Image {
-  const qa = image.select('QA_PIXEL');
-  const dilated = 1 << 1;
-  const cirrus = 1 << 2;
-  const cloud = 1 << 3;
-  const shadow = 1 << 4;
-  const mask = qa
-    .bitwiseAnd(dilated)
-    .eq(0)
-    .and(qa.bitwiseAnd(cirrus).eq(0))
-    .and(qa.bitwiseAnd(cloud).eq(0))
-    .and(qa.bitwiseAnd(shadow).eq(0));
-  return image.select(['SR_B.*']).updateMask(mask);
+  const cs = image.select('cs_cdf');
+  const mask = cs.gt(0.6);
+  return image.select(['B.*']).updateMask(mask).multiply(0.0001);
 }
 
 /**
