@@ -16,12 +16,13 @@ export default function Home() {
   // Map state
   const [map, setMap] = useState<Map>();
   const [mapStyle, setMapStyle] = useState(
-    `https://api.maptiler.com/maps/basic-v2/style.json?key=${mapTilerKey}`,
+    'https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json',
   );
   const [bounds, setBounds] = useState<LngLatBoundsLike>([
     105.97914832893267, -7.138747219601581, 107.78850517687292, -5.340106492152504,
   ]);
   const [tileUrl, setTileUrl] = useState<string>();
+  const [loadingText, setLoadingText] = useState<string>();
 
   // Function to parse date
   const stringDate = (date: Date) => date.toISOString().split('T')[0];
@@ -44,27 +45,35 @@ export default function Home() {
     bounds: LngLatBoundsLike,
     bands: string[],
   ): Promise<void> {
-    const body: ImageRequestBody = {
-      bounds,
-      date,
-      bands,
-    };
+    try {
+      // Show loading
+      setLoadingText('Loading...');
 
-    const res = await fetch('/api/ee', {
-      method: 'POST',
-      body: JSON.stringify(body),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+      const body: ImageRequestBody = {
+        bounds,
+        date,
+        bands,
+      };
 
-    const { url, message }: ImageResponseBody = await res.json();
+      const res = await fetch('/api/ee', {
+        method: 'POST',
+        body: JSON.stringify(body),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
-    if (!res.ok) {
-      throw new Error(message);
+      const { url, message }: ImageResponseBody = await res.json();
+
+      if (!res.ok) {
+        throw new Error(message);
+      }
+
+      setTileUrl(url);
+    } catch (error) {
+      // Show loading
+      setLoadingText(error.message);
     }
-
-    setTileUrl(url);
   }
 
   // Load when html rendered
@@ -114,8 +123,24 @@ export default function Home() {
           maxzoom: 22,
         });
       }
+
+      // End tile loading
+      setLoadingText(undefined);
     }
   }, [tileUrl]);
 
-  return <div id='map'></div>;
+  return (
+    <>
+      <Float text={loadingText} />
+      <div id='map'></div>
+    </>
+  );
+}
+
+function Float({ text }: { text: string }) {
+  return (
+    <div id='float'>
+      <div className='float-panel'>{text}</div>
+    </div>
+  );
 }

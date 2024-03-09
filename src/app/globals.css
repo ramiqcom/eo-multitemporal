@@ -9,7 +9,7 @@ body {
   font-size: medium;
   background-color: #181a1b;
   color: #e8e6e3;
-  flex-direction: row-reverse;
+  flex-direction: column;
 }
 
 input[type='file'] {
@@ -157,13 +157,13 @@ button:disabled {
   z-index: 99999;
   position: absolute;
   margin-top: 2vh;
-  margin-right: 5vh;
+  margin-left: 2vh;
 }
 
 .float-panel {
   background-color: #181a1b;
-  padding: 5%;
-  width: 45vh;
+  padding: 20%;
+  width: max-content;
   max-height: 90vh;
 }
 
