@@ -1,6 +1,6 @@
 'use client';
 
-import { bbox, buffer, point } from '@turf/turf';
+import { BBox, bboxPolygon, booleanIntersects } from '@turf/turf';
 import { LngLatBoundsLike, Map, RasterTileSource } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useEffect, useState } from 'react';
@@ -11,15 +11,15 @@ export default function Home() {
   const rasterId = 'ee-layer';
 
   // Maptiler key
-  const mapTilerKey = process.env.NEXT_PUBLIC_MAPTILER_KEY;
+  const stadiaKey = process.env.NEXT_PUBLIC_STADIA_KEY;
 
   // Map state
   const [map, setMap] = useState<Map>();
   const [mapStyle, setMapStyle] = useState(
-    'https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json',
+    `https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json?api_key=${stadiaKey}`,
   );
   const [bounds, setBounds] = useState<LngLatBoundsLike>([
-    105.97914832893267, -7.138747219601581, 107.78850517687292, -5.340106492152504,
+    106.42082590885717, -6.688028295941078, 107.32550317136398, -5.788707932216541,
   ]);
   const [tileUrl, setTileUrl] = useState<string>();
   const [loadingText, setLoadingText] = useState<string>();
@@ -29,7 +29,7 @@ export default function Home() {
   const currentDate = new Date();
   const currentDateString = stringDate(currentDate);
   const currentDateMilis = currentDate.getTime();
-  const lastMonthMillis = currentDateMilis - 7_889_238_000;
+  const lastMonthMillis = currentDateMilis - 7_889_400_000;
   const lastMonthDate = new Date(lastMonthMillis);
   const lastMonthString = stringDate(lastMonthDate);
 
@@ -89,11 +89,16 @@ export default function Home() {
 
     // When map change bounds do something
     map.on('moveend', async (e) => {
-      const center = map.getCenter().toArray();
-      const pointGeojson = point(center);
-      const buffered = buffer(pointGeojson, 100);
-      const bounds = bbox(buffered) as LngLatBoundsLike;
-      setBounds(bounds);
+      const boundsNew = map.getBounds().toArray().flat() as LngLatBoundsLike;
+      const boundsNewPolygon = bboxPolygon(boundsNew as BBox);
+
+      // Compare to previous bounds
+      const oldBounds = bboxPolygon(bounds as BBox);
+      const intersect = booleanIntersects(boundsNewPolygon, oldBounds);
+
+      if (!intersect) {
+        setBounds(boundsNew);
+      }
     });
   }, []);
 
@@ -104,7 +109,7 @@ export default function Home() {
 
   // When the tile url changed then add it to map
   useEffect(() => {
-    if (map && map.loaded() && tileUrl) {
+    if (tileUrl) {
       if (map.getSource(rasterId)) {
         const source = map.getSource(rasterId) as RasterTileSource;
         source.setTiles([tileUrl]);
