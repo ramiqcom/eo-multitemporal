@@ -1,95 +1,115 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client';
+
+import { bbox, buffer, point } from '@turf/turf';
+import { LngLatBoundsLike, Map, RasterTileSource } from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
+import { useEffect, useState } from 'react';
+import { ImageRequestBody, ImageResponseBody } from './module/global';
 
 export default function Home() {
-  return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+  const mapDivId = 'map';
+  const rasterId = 'ee-layer';
 
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
+  // Map state
+  const [map, setMap] = useState<Map>();
+  const [bounds, setBounds] = useState<LngLatBoundsLike>([
+    115.75696526982738, -1.9748016469508622, 117.55592285718053, -0.17616091950178595,
+  ]);
+  const [tileUrl, setTileUrl] = useState<string>();
 
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
+  // Function to parse date
+  const stringDate = (date: Date) => date.toISOString().split('T')[0];
+  const currentDate = new Date();
+  const currentDateString = stringDate(currentDate);
+  const currentDateMilis = currentDate.getTime();
+  const lastMonthMillis = currentDateMilis - 7_889_400_000;
+  const lastMonthDate = new Date(lastMonthMillis);
+  const lastMonthString = stringDate(lastMonthDate);
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
+  // Bands composite
+  const [bands, setBands] = useState(['SR_B5', 'SR_B6', 'SR_B7']);
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
+  // Date state
+  const [date, setDate] = useState<string[]>([lastMonthString, currentDateString]);
 
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  );
+  // Function to load tile url
+  async function loadTile(
+    date: string[],
+    bounds: LngLatBoundsLike,
+    bands: string[],
+  ): Promise<void> {
+    const body: ImageRequestBody = {
+      bounds,
+      date,
+      bands,
+    };
+
+    const res = await fetch('/api/ee', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const { url, message }: ImageResponseBody = await res.json();
+
+    if (!res.ok) {
+      throw new Error(message);
+    }
+
+    setTileUrl(url);
+  }
+
+  // Load when html rendered
+  useEffect(() => {
+    // Load new map
+    const map = new Map({
+      container: mapDivId,
+      bounds,
+      style: 'https://demotiles.maplibre.org/style.json',
+    });
+
+    setMap(map);
+
+    // When map change bounds do something
+    map.on('moveend', async (e) => {
+      const center = map.getCenter().toArray();
+      const pointGeojson = point(center);
+      const buffered = buffer(pointGeojson, 100);
+      const bounds = bbox(buffered) as LngLatBoundsLike;
+      setBounds(bounds);
+    });
+  }, []);
+
+  // When the bounds or date change load tile url
+  useEffect(() => {
+    loadTile(date, bounds, bands);
+  }, [date, bounds, bands]);
+
+  // When the tile url changed then add it to map
+  useEffect(() => {
+    if (map && map.loaded() && tileUrl) {
+      if (map.getSource(rasterId)) {
+        const source = map.getSource(rasterId) as RasterTileSource;
+        source.setTiles([tileUrl]);
+      } else {
+        map.addSource(rasterId, {
+          tiles: [tileUrl],
+          type: 'raster',
+          tileSize: 256,
+        });
+
+        map.addLayer({
+          id: rasterId,
+          source: rasterId,
+          type: 'raster',
+          minzoom: 0,
+          maxzoom: 22,
+        });
+      }
+    }
+  }, [tileUrl]);
+
+  return <div id='map'></div>;
 }
