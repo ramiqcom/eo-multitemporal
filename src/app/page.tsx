@@ -4,8 +4,8 @@ import booleanIntersects from '@turf/intersect';
 import { BBox, bboxPolygon } from '@turf/turf';
 import { LngLatBoundsLike, Map, RasterTileSource } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { useEffect, useState } from 'react';
-import { ImageRequestBody, ImageResponseBody } from './module/global';
+import { useContext, useEffect, useState } from 'react';
+import { Context, GlobalContext, ImageRequestBody, ImageResponseBody } from './module/global';
 
 export default function Home() {
   const mapDivId = 'map';
@@ -39,6 +39,18 @@ export default function Home() {
 
   // Date state
   const [date, setDate] = useState<string[]>([lastMonthString, currentDateString]);
+
+  // Date millis center
+  const dateMillisCenter = (currentDateMilis - lastMonthMillis) / 2 + lastMonthMillis;
+  const [dateSliderValue, setDateSliderValue] = useState(dateMillisCenter);
+
+  // Context value
+  const contextDict = {
+    dateSliderValue,
+    setDateSliderValue,
+    loadingText,
+    setLoadingText,
+  };
 
   // Function to load tile url
   async function loadTile(
@@ -137,16 +149,45 @@ export default function Home() {
 
   return (
     <>
-      <Float text={loadingText} />
-      <div id='map'></div>
+      <Context.Provider value={contextDict}>
+        <Float />
+        <div id='map'></div>
+      </Context.Provider>
     </>
   );
 }
 
-function Float({ text }: { text: string }) {
+function Float() {
+  const { loadingText, setLoadingText } = useContext(Context) as GlobalContext;
+
   return (
-    <div id='float'>
-      <div className='float-panel'>{text}</div>
+    <div id='float' className='flexible vertical small-gap'>
+      {loadingText ? <div className='float-panel'>{loadingText}</div> : undefined}
+      <TimeRange />
+    </div>
+  );
+}
+
+function TimeRange() {
+  const { dateSliderValue, setDateSliderValue } = useContext(Context) as GlobalContext;
+
+  const currentDate = new Date();
+  const currentDateMillis = currentDate.getTime();
+  const date2019 = new Date('2019-01-01');
+  const date2019Millis = date2019.getTime();
+
+  return (
+    <div className='float-panel'>
+      <input
+        type='range'
+        value={dateSliderValue}
+        onChange={(e) => setDateSliderValue(Number(e.target.value))}
+        min={date2019Millis}
+        max={currentDateMillis}
+        style={{
+          width: '100vh',
+        }}
+      />
     </div>
   );
 }

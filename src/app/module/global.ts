@@ -1,5 +1,5 @@
 import { LngLatBoundsLike } from 'maplibre-gl';
-import { createContext } from 'react';
+import { Dispatch, SetStateAction, createContext } from 'react';
 
 export type Option = { label: string; value: any };
 
@@ -27,6 +27,13 @@ export type ImageRequestBody = {
 export type ImageResponseBody = {
   url?: string;
   message?: string;
+};
+
+export type GlobalContext = {
+  dateSliderValue: number;
+  setDateSliderValue: Dispatch<SetStateAction<number>>;
+  loadingText: string;
+  setLoadingText: Dispatch<SetStateAction<string>>;
 };
 
 export const Context = createContext<{}>({});
