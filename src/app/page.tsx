@@ -25,24 +25,11 @@ export default function Home() {
   const [tileUrl, setTileUrl] = useState<string>();
   const [loadingText, setLoadingText] = useState<string>();
 
-  // Function to parse date
-  const stringDate = (date: Date) => date.toISOString().split('T')[0];
-  const currentDate = new Date();
-  const currentDateString = stringDate(currentDate);
-  const currentDateMilis = currentDate.getTime();
-  const lastMonthMillis = currentDateMilis - 7_889_400_000;
-  const lastMonthDate = new Date(lastMonthMillis);
-  const lastMonthString = stringDate(lastMonthDate);
-
   // Bands composite
   const [bands, setBands] = useState(['B8', 'B11', 'B12']);
 
-  // Date state
-  const [date, setDate] = useState<string[]>([lastMonthString, currentDateString]);
-
   // Date millis center
-  const dateMillisCenter = (currentDateMilis - lastMonthMillis) / 2 + lastMonthMillis;
-  const [dateSliderValue, setDateSliderValue] = useState(dateMillisCenter);
+  const [dateSliderValue, setDateSliderValue] = useState(1_706_309_534_850);
 
   // Context value
   const contextDict = {
@@ -53,18 +40,20 @@ export default function Home() {
   };
 
   // Function to load tile url
-  async function loadTile(
-    date: string[],
-    bounds: LngLatBoundsLike,
-    bands: string[],
-  ): Promise<void> {
+  async function loadTile(date: number, bounds: LngLatBoundsLike, bands: string[]): Promise<void> {
     try {
       // Show loading
       setLoadingText('Loading...');
 
+      // Function to parse date
+      const stringDate = (date: Date) => date.toISOString().split('T')[0];
+      const start = new Date(date - 2_629_746_000);
+      const end = new Date(date + 2_629_746_000);
+      const dates = [stringDate(start), stringDate(end)];
+
       const body: ImageRequestBody = {
         bounds,
-        date,
+        date: dates,
         bands,
       };
 
@@ -117,8 +106,8 @@ export default function Home() {
 
   // When the bounds or date change load tile url
   useEffect(() => {
-    loadTile(date, bounds, bands);
-  }, [date, bounds, bands]);
+    loadTile(dateSliderValue, bounds, bands);
+  }, [dateSliderValue, bounds, bands]);
 
   // When the tile url changed then add it to map
   useEffect(() => {
@@ -130,7 +119,7 @@ export default function Home() {
         map.addSource(rasterId, {
           tiles: [tileUrl],
           type: 'raster',
-          tileSize: 256,
+          tileSize: 128,
         });
 
         map.addLayer({
@@ -158,7 +147,7 @@ export default function Home() {
 }
 
 function Float() {
-  const { loadingText, setLoadingText } = useContext(Context) as GlobalContext;
+  const { loadingText } = useContext(Context) as GlobalContext;
 
   return (
     <div id='float' className='flexible vertical small-gap'>
@@ -171,6 +160,8 @@ function Float() {
 function TimeRange() {
   const { dateSliderValue, setDateSliderValue } = useContext(Context) as GlobalContext;
 
+  const [dateTemp, setDateTemp] = useState(dateSliderValue);
+
   const currentDate = new Date();
   const currentDateMillis = currentDate.getTime();
   const date2019 = new Date('2019-01-01');
@@ -180,10 +171,12 @@ function TimeRange() {
     <div className='float-panel'>
       <input
         type='range'
-        value={dateSliderValue}
-        onChange={(e) => setDateSliderValue(Number(e.target.value))}
+        value={dateTemp}
+        onChange={(e) => setDateTemp(Number(e.target.value))}
+        onMouseUp={() => setDateSliderValue(dateTemp)}
         min={date2019Millis}
         max={currentDateMillis}
+        step={86_400_000}
         style={{
           width: '100vh',
         }}

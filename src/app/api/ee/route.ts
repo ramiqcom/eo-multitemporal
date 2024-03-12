@@ -43,6 +43,7 @@ export async function POST(req: Request) {
 
     // Get image url
     const { urlFormat } = await getMapId(median, vis);
+    console.log(urlFormat);
 
     // Return the tile url
     return NextResponse.json({ url: urlFormat }, { status: 200 });
