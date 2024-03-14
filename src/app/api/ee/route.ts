@@ -2,6 +2,7 @@ import 'node-self';
 
 import ee from '@google/earthengine';
 import { NextResponse } from 'next/server';
+import bandsSet from '../../data/bands.json';
 import { ImageRequestBody, MapId, VisObject } from '../../module/global';
 
 export async function POST(req: Request) {
@@ -37,8 +38,8 @@ export async function POST(req: Request) {
     // Visualization parameter
     const vis = {
       bands,
-      min: [0.1, 0.05, 0.025],
-      max: [0.4, 0.3, 0.2],
+      min: bands.map((band) => bandsSet.filter((x) => x.value == band)[0].min),
+      max: bands.map((band) => bandsSet.filter((x) => x.value == band)[0].max),
     };
 
     // Get image url

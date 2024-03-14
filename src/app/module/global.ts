@@ -36,6 +36,12 @@ export type GlobalContext = {
   setLoadingText: Dispatch<SetStateAction<string>>;
   allowGenerate: boolean;
   setAllowGenerate: Dispatch<SetStateAction<boolean>>;
+  red: Option;
+  setRed: Dispatch<SetStateAction<Option>>;
+  green: Option;
+  setGreen: Dispatch<SetStateAction<Option>>;
+  blue: Option;
+  setBlue: Dispatch<SetStateAction<Option>>;
 };
 
 export const Context = createContext<{}>({});

@@ -1,0 +1,14 @@
+[
+  { "value": "B1", "label": "B1", "min": 0.025, "max": 0.2 },
+  { "value": "B2", "label": "B2", "min": 0.025, "max": 0.2 },
+  { "value": "B3", "label": "B3", "min": 0.025, "max": 0.2 },
+  { "value": "B4", "label": "B4", "min": 0.025, "max": 0.2 },
+  { "value": "B5", "label": "B5", "min": 0.05, "max": 0.3 },
+  { "value": "B6", "label": "B6", "min": 0.05, "max": 0.3 },
+  { "value": "B7", "label": "B7", "min": 0.05, "max": 0.3 },
+  { "value": "B8", "label": "B8", "min": 0.1, "max": 0.4 },
+  { "value": "B8A", "label": "B8A", "min": 0.05, "max": 0.3 },
+  { "value": "B9", "label": "B9", "min": 0.1, "max": 0.4 },
+  { "value": "B11", "label": "B11", "min": 0.05, "max": 0.3 },
+  { "value": "B12", "label": "B12", "min": 0.025, "max": 0.2 }
+]
