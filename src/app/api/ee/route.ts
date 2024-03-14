@@ -43,7 +43,6 @@ export async function POST(req: Request) {
 
     // Get image url
     const { urlFormat } = await getMapId(median, vis);
-    console.log(urlFormat);
 
     // Return the tile url
     return NextResponse.json({ url: urlFormat }, { status: 200 });
@@ -59,7 +58,7 @@ export async function POST(req: Request) {
  */
 function cloudMasking(image: ee.Image): ee.Image {
   const cs = image.select('cs_cdf');
-  const mask = cs.gt(0.6);
+  const mask = cs.gt(0.8);
   return image.select(['B.*']).updateMask(mask).multiply(0.0001);
 }
 

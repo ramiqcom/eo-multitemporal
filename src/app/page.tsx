@@ -1,11 +1,12 @@
 'use client';
 
-import booleanIntersects from '@turf/intersect';
+import booleanIntersects from '@turf/boolean-intersects';
 import { BBox, bboxPolygon } from '@turf/turf';
 import { LngLatBoundsLike, Map, RasterTileSource } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useContext, useEffect, useState } from 'react';
 import { Context, GlobalContext, ImageRequestBody, ImageResponseBody } from './module/global';
+import { dateString } from './module/utils';
 
 export default function Home() {
   const mapDivId = 'map';
@@ -46,10 +47,9 @@ export default function Home() {
       setLoadingText('Loading...');
 
       // Function to parse date
-      const stringDate = (date: Date) => date.toISOString().split('T')[0];
       const start = new Date(date - 2_629_746_000);
       const end = new Date(date + 2_629_746_000);
-      const dates = [stringDate(start), stringDate(end)];
+      const dates = [dateString(start), dateString(end)];
 
       const body: ImageRequestBody = {
         bounds,
@@ -90,13 +90,14 @@ export default function Home() {
     setMap(map);
 
     // When map change bounds do something
-    map.on('moveend', async (e) => {
+    map.on('moveend', () => {
       const boundsNew = map.getBounds().toArray().flat() as LngLatBoundsLike;
       const boundsNewPolygon = bboxPolygon(boundsNew as BBox);
 
       // Compare to previous bounds
       const oldBounds = bboxPolygon(bounds as BBox);
       const intersect = booleanIntersects(boundsNewPolygon, oldBounds);
+      console.log(intersect);
 
       if (!intersect) {
         setBounds(boundsNew);
@@ -162,25 +163,57 @@ function TimeRange() {
 
   const [dateTemp, setDateTemp] = useState(dateSliderValue);
 
+  const years = [2018, 2019, 2020, 2021, 2022, 2023, 2024];
   const currentDate = new Date();
   const currentDateMillis = currentDate.getTime();
-  const date2019 = new Date('2019-01-01');
-  const date2019Millis = date2019.getTime();
+  const dateStart = new Date(`${years.at(0)}-01-01`);
+  const dateStartMillis = dateStart.getTime();
+
+  const list = years
+    .map((year, index1) =>
+      ['01-01', '06-31'].map((date, index2) => (
+        <option
+          key={Number(`${index1 + 1}0${index2 + 1}`)}
+          value={new Date(`${year}-${date}`).getTime()}
+        />
+      )),
+    )
+    .flat();
+
+  const rangeWidth = 100;
+  const yearLast = new Date(`${years.at(-1)}-01-01`).getTime();
+  const timeDistance = ((yearLast - dateStartMillis) * 100) / (currentDateMillis - dateStartMillis);
 
   return (
-    <div className='float-panel'>
+    <div className='flexible vertical float-panel'>
+      <div className='flexible center1 center2' style={{ backgroundColor: 'gray ' }}>
+        {dateString(new Date(dateSliderValue))}
+      </div>
+
       <input
         type='range'
         value={dateTemp}
         onChange={(e) => setDateTemp(Number(e.target.value))}
         onMouseUp={() => setDateSliderValue(dateTemp)}
-        min={date2019Millis}
+        min={dateStartMillis}
         max={currentDateMillis}
         step={86_400_000}
         style={{
-          width: '100vh',
+          width: `${rangeWidth}vh`,
+          color: 'white',
         }}
+        list='marker'
       />
+
+      <datalist id='marker'>{list}</datalist>
+
+      <div className='flexible wide' style={{ width: `${timeDistance}vh` }}>
+        {years.map((year, index) => (
+          <div className='flexible' key={index}>
+            {year}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

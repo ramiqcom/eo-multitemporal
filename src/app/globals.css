@@ -18,7 +18,8 @@ input[type='file'] {
   width: 100%;
 }
 
-input[type='range'] {
+option {
+  padding: 0;
 }
 
 input[type='file']::file-selector-button {
