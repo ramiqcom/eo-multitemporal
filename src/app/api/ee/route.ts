@@ -58,7 +58,7 @@ export async function POST(req: Request) {
  */
 function cloudMasking(image: ee.Image): ee.Image {
   const cs = image.select('cs_cdf');
-  const mask = cs.gt(0.8);
+  const mask = cs.gt(0.6);
   return image.select(['B.*']).updateMask(mask).multiply(0.0001);
 }
 

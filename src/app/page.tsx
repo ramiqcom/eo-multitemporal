@@ -32,12 +32,17 @@ export default function Home() {
   // Date millis center
   const [dateSliderValue, setDateSliderValue] = useState(1_706_309_534_850);
 
+  // Checkbox for allowing to generate image
+  const [allowGenerate, setAllowGenerate] = useState(true);
+
   // Context value
   const contextDict = {
     dateSliderValue,
     setDateSliderValue,
     loadingText,
     setLoadingText,
+    allowGenerate,
+    setAllowGenerate,
   };
 
   // Function to load tile url
@@ -107,8 +112,10 @@ export default function Home() {
 
   // When the bounds or date change load tile url
   useEffect(() => {
-    loadTile(dateSliderValue, bounds, bands);
-  }, [dateSliderValue, bounds, bands]);
+    if (allowGenerate) {
+      loadTile(dateSliderValue, bounds, bands);
+    }
+  }, [dateSliderValue, bounds, bands, allowGenerate]);
 
   // When the tile url changed then add it to map
   useEffect(() => {
@@ -159,7 +166,9 @@ function Float() {
 }
 
 function TimeRange() {
-  const { dateSliderValue, setDateSliderValue } = useContext(Context) as GlobalContext;
+  const { dateSliderValue, setDateSliderValue, allowGenerate, setAllowGenerate } = useContext(
+    Context,
+  ) as GlobalContext;
 
   const [dateTemp, setDateTemp] = useState(dateSliderValue);
 
@@ -186,8 +195,19 @@ function TimeRange() {
 
   return (
     <div className='flexible vertical float-panel'>
-      <div className='flexible center1 center2' style={{ backgroundColor: 'gray ' }}>
-        {dateString(new Date(dateSliderValue))}
+      <div className='flexible gap'>
+        <div className='flexible' style={{ width: '20%' }}>
+          <input
+            type='checkbox'
+            checked={allowGenerate}
+            onChange={(e) => setAllowGenerate(e.target.checked)}
+          />
+          Generate image
+        </div>
+
+        <div className='flexible center1 center2' style={{ backgroundColor: 'gray', width: '80%' }}>
+          {dateString(new Date(dateSliderValue))}
+        </div>
       </div>
 
       <input

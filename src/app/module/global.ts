@@ -34,6 +34,8 @@ export type GlobalContext = {
   setDateSliderValue: Dispatch<SetStateAction<number>>;
   loadingText: string;
   setLoadingText: Dispatch<SetStateAction<string>>;
+  allowGenerate: boolean;
+  setAllowGenerate: Dispatch<SetStateAction<boolean>>;
 };
 
 export const Context = createContext<{}>({});
